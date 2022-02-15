@@ -188,12 +188,14 @@ def make_salary_table(languages_info, title):
 
 
 if __name__ == '__main__':
+    print('Getting data from SuperJob')
     try:
         sj_coding_salaries = get_sj_salary_stat()
     except requests.exceptions.HTTPError as error:
         print(f'Sorry, information from SuperJob is temporarily unavailable.\n'
               f'{error}')
 
+    print('Getting data from HeadHunter')
     try:
         hh_coding_salaries = get_hh_salary_stat()
     except requests.exceptions.HTTPError as error:

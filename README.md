@@ -23,7 +23,7 @@ SJ_SECRET_KEY=v3.r.2lkjl2k3j4l2kj34lkjlkjl2kjl23423423423.a2342342kj4h2kj3h4k2j3
 USER_AGENT={your_user_agent}
 ```
 
-## how to launch
+## How to launch
 from root folder write in terminal
 ```
 $ python3 main.py

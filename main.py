@@ -164,13 +164,20 @@ if __name__ == '__main__':
     sj_coding_salaries, hh_coding_salaries = {}, {}
     for language in tqdm(TOP_LANGS):
         try:
-            sj_total, sj_salaries = get_sj_salary_stat(sj_headers, language, 'Moscow', 'Программирование')
+            sj_total, sj_salaries = get_sj_salary_stat(
+                sj_headers,
+                language,
+                'Moscow',
+                'Программирование'
+            )
             sj_coding_salaries.update(
                 {
                     language: {
                         'vacancies_found': sj_total,
                         'vacancies_processed': len(sj_salaries),
-                        'average_salary': round(sum(sj_salaries) / len(sj_salaries))
+                        'average_salary': round(
+                            sum(sj_salaries) / len(sj_salaries)
+                        )
                     }
                 }
             )
@@ -178,13 +185,20 @@ if __name__ == '__main__':
             print(f'Sorry, {language} is not available now in SuperJob.')
 
         try:
-            hh_total, hh_salaries = get_hh_salary_stat(hh_headers, language, 'Moscow', 'Программирование')
+            hh_total, hh_salaries = get_hh_salary_stat(
+                hh_headers,
+                language,
+                'Moscow',
+                'Программирование'
+            )
             hh_coding_salaries.update(
                 {
                     language: {
                         'vacancies_found': hh_total,
                         'vacancies_processed': len(hh_salaries),
-                        'average_salary': round(sum(hh_salaries) / len(hh_salaries))
+                        'average_salary': round(
+                            sum(hh_salaries) / len(hh_salaries)
+                        )
                     }
                 }
             )

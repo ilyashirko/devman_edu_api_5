@@ -28,4 +28,4 @@ from root folder write in terminal
 ```
 $ python3 main.py
 ```
-You will see 2 progress bar and then you will get a table with all available statistic.
+You will see progress bar and then you will get a table with all available statistic.

@@ -1,23 +1,14 @@
+from itertools import count
+
 import requests
 import environs
 
 from terminaltables import AsciiTable
 from tqdm import tqdm
 
-env = environs.Env()
-env.read_env()
-
 HH_BASE_URL = 'https://api.hh.ru/'
 
 SJ_BASE_URL = 'https://api.superjob.ru/2.0/'
-
-HH_HEADERS = {
-    'User-Agent': env.str('USER_AGENT')
-}
-
-SJ_HEADERS = {
-    'X-Api-App-Id': env.str('SJ_SECRET_KEY')
-}
 
 AREAS = {
     'hh': {
@@ -76,94 +67,65 @@ def predict_salary(salary_from, salary_to):
     return None
 
 
-def get_hh_salary_stat():
-    languages_salary_stat = {}
-    for language in tqdm(TOP_LANGS):
-        salaries = []
-        page = 1
-        while True:
-            params = {
-                "area": AREAS['hh']['Moscow'],
-                "specialization": SPECIALIZATIONS['hh']['Программирование'],
-                "period": "30",
-                "host": "hh.ru",
-                "per_page": "100",
-                "page": page,
-                "text": language
-            }
-            response = requests.get(
-                f'{HH_BASE_URL}vacancies',
-                headers=HH_HEADERS,
-                params=params
-            )
-
-            response.raise_for_status()
-            vacancies = response.json()
-
-            for vacancy in vacancies['items']:
-                if vacancy['salary']:
-                    salary = predict_rub_salary_for_headhunter(vacancy)
-                    if salary:
-                        salaries.append(salary)
-
-            if vacancies['pages'] == page:
-                break
-            page += 1
-
-        languages_salary_stat.update(
-            {
-                language: {
-                    'vacancies_found': vacancies['found'],
-                    "vacancies_processed": len(salaries),
-                    "average_salary": round(sum(salaries) / len(salaries))
-                }
-            }
+def get_hh_salary_stat(hh_headers, language, area, specialization):
+    salaries = []
+    for page in count(0, 1):
+        params = {
+            "area": AREAS['hh'][area],
+            "specialization": SPECIALIZATIONS['hh'][specialization],
+            "period": "30",
+            "host": "hh.ru",
+            "per_page": "100",
+            "page": page,
+            "text": language
+        }
+        response = requests.get(
+            f'{HH_BASE_URL}vacancies',
+            headers=hh_headers,
+            params=params
         )
-    return languages_salary_stat
+        print(page, response.status_code)
+        response.raise_for_status()
+        vacancies = response.json()
 
-
-def get_sj_salary_stat():
-    languages_salary_stat = {}
-    for language in tqdm(TOP_LANGS):
-        salaries = []
-        page = 0
-        while True:
-            sj_params = {
-                'keyword': language,
-                'town': AREAS['sj']['Moscow'],
-                'catalogue': SPECIALIZATIONS['sj']['Программирование'],
-                'page': page
-            }
-
-            response = requests.get(
-                f'{SJ_BASE_URL}vacancies',
-                headers=SJ_HEADERS,
-                params=sj_params
-            )
-
-            response.raise_for_status()
-            vacancies = response.json()
-
-            for vacancy in vacancies['objects']:
-                salary = predict_rub_salary_for_superjob(vacancy)
+        for vacancy in vacancies['items']:
+            if vacancy['salary']:
+                salary = predict_rub_salary_for_headhunter(vacancy)
                 if salary:
                     salaries.append(salary)
 
-            if not vacancies['more']:
-                break
+        if vacancies['pages'] == (page + 1):
+            break
+    return vacancies['found'], salaries
 
-            page += 1
 
-        languages_salary_stat.update(
-            {
-                language: {
-                    'vacancies_found': vacancies['total'],
-                    'vacancies_processed': len(salaries),
-                    'average_salary': round(sum(salaries) / len(salaries))
-                }
-            }
+def get_sj_salary_stat(sj_headers, language, area, specialization):
+    salaries = []
+    for page in count(0, 1):
+        sj_params = {
+            'keyword': language,
+            'town': AREAS['sj'][area],
+            'catalogue': SPECIALIZATIONS['sj'][specialization],
+            'page': page
+        }
+
+        response = requests.get(
+            f'{SJ_BASE_URL}vacancies',
+            headers=sj_headers,
+            params=sj_params
         )
-    return languages_salary_stat
+
+        response.raise_for_status()
+        vacancies = response.json()
+
+        for vacancy in vacancies['objects']:
+            salary = predict_rub_salary_for_superjob(vacancy)
+            if salary:
+                salaries.append(salary)
+
+        if not vacancies['more']:
+            break
+    return vacancies['total'], salaries
 
 
 def make_salary_table(languages_info, title):
@@ -188,19 +150,46 @@ def make_salary_table(languages_info, title):
 
 
 if __name__ == '__main__':
-    print('Getting data from SuperJob')
-    try:
-        sj_coding_salaries = get_sj_salary_stat()
-    except requests.exceptions.HTTPError as error:
-        print(f'Sorry, information from SuperJob is temporarily unavailable.\n'
-              f'{error}')
+    env = environs.Env()
+    env.read_env()
 
-    print('Getting data from HeadHunter')
-    try:
-        hh_coding_salaries = get_hh_salary_stat()
-    except requests.exceptions.HTTPError as error:
-        print(f'Sorry, information from HeadHunter is temporarily unavailable.'
-              f'\n{error}')
+    hh_headers = {
+        'User-Agent': env.str('USER_AGENT')
+    }
+
+    sj_headers = {
+        'X-Api-App-Id': env.str('SJ_SECRET_KEY')
+    }
+    print('Getting data...')
+    sj_coding_salaries, hh_coding_salaries = {}, {}
+    for language in tqdm(TOP_LANGS):
+        try:
+            sj_total, sj_salaries = get_sj_salary_stat(sj_headers, language, 'Moscow', 'Программирование')
+            sj_coding_salaries.update(
+                {
+                    language: {
+                        'vacancies_found': sj_total,
+                        'vacancies_processed': len(sj_salaries),
+                        'average_salary': round(sum(sj_salaries) / len(sj_salaries))
+                    }
+                }
+            )
+        except requests.exceptions.HTTPError:
+            print(f'Sorry, {language} is not available now in SuperJob.')
+
+        try:
+            hh_total, hh_salaries = get_hh_salary_stat(hh_headers, language, 'Moscow', 'Программирование')
+            hh_coding_salaries.update(
+                {
+                    language: {
+                        'vacancies_found': hh_total,
+                        'vacancies_processed': len(hh_salaries),
+                        'average_salary': round(sum(hh_salaries) / len(hh_salaries))
+                    }
+                }
+            )
+        except requests.exceptions.HTTPError:
+            print(f'Sorry, {language} is not available now in HeadHunter.')
 
     print(make_salary_table(sj_coding_salaries, 'SuperJob Moscow').table)
     print(make_salary_table(hh_coding_salaries, 'HeadHunter Moscow').table)

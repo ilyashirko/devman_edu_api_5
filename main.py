@@ -64,7 +64,6 @@ def predict_salary(salary_from, salary_to):
         return round(salary_from * 1.2)
     elif salary_to:
         return round(salary_to * 0.8)
-    return None
 
 
 def get_hh_salary_stat(hh_headers, language, area, specialization):
@@ -84,7 +83,7 @@ def get_hh_salary_stat(hh_headers, language, area, specialization):
             headers=hh_headers,
             params=params
         )
-        print(page, response.status_code)
+
         response.raise_for_status()
         vacancies = response.json()
 

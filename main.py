@@ -64,15 +64,14 @@ def predict_salary(salary_from, salary_to):
         return round(salary_from * 1.2)
     elif salary_to:
         return round(salary_to * 0.8)
-    return None
 
 
 def get_hh_salary_stat(hh_headers, language, area, specialization):
     salaries = []
     for page in count(0, 1):
         params = {
-            "area": AREAS['hh'][area],
-            "specialization": SPECIALIZATIONS['hh'][specialization],
+            "area": area,
+            "specialization": specialization,
             "period": "30",
             "host": "hh.ru",
             "per_page": "100",
@@ -80,11 +79,11 @@ def get_hh_salary_stat(hh_headers, language, area, specialization):
             "text": language
         }
         response = requests.get(
-            f'{HH_BASE_URL}vacancies',
+            'https://api.hh.ru/vacancies',
             headers=hh_headers,
             params=params
         )
-        print(page, response.status_code)
+
         response.raise_for_status()
         vacancies = response.json()
 
@@ -104,13 +103,13 @@ def get_sj_salary_stat(sj_headers, language, area, specialization):
     for page in count(0, 1):
         sj_params = {
             'keyword': language,
-            'town': AREAS['sj'][area],
-            'catalogue': SPECIALIZATIONS['sj'][specialization],
+            'town': area,
+            'catalogue': specialization,
             'page': page
         }
 
         response = requests.get(
-            f'{SJ_BASE_URL}vacancies',
+            'https://api.superjob.ru/2.0/vacancies',
             headers=sj_headers,
             params=sj_params
         )
@@ -167,8 +166,8 @@ if __name__ == '__main__':
             sj_total, sj_salaries = get_sj_salary_stat(
                 sj_headers,
                 language,
-                'Moscow',
-                'Программирование'
+                AREAS['sj']['Moscow'],
+                SPECIALIZATIONS['sj']['Программирование']
             )
             sj_coding_salaries.update(
                 {
@@ -188,8 +187,8 @@ if __name__ == '__main__':
             hh_total, hh_salaries = get_hh_salary_stat(
                 hh_headers,
                 language,
-                'Moscow',
-                'Программирование'
+                AREAS['hh']['Moscow'],
+                SPECIALIZATIONS['hh']['Программирование']
             )
             hh_coding_salaries.update(
                 {

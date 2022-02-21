@@ -6,10 +6,6 @@ import environs
 from terminaltables import AsciiTable
 from tqdm import tqdm
 
-HH_BASE_URL = 'https://api.hh.ru/'
-
-SJ_BASE_URL = 'https://api.superjob.ru/2.0/'
-
 AREAS = {
     'hh': {
         "Saint-Petersburg": "2",
